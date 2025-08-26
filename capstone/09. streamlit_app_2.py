@@ -341,22 +341,43 @@ left, right = st.columns([1.25, 1.0], gap="large")
 
 with right:
     st.markdown(f"### Base Station: `{bs_choice}`")
+
+    # Build points (selected bright, others dim)
     pts = []
     for name, (lat, lon) in STATIONS.items():
-        color = [0, 200, 140] if name == bs_choice else [150, 150, 150]
-        radius = 130 if name == bs_choice else 70
-        pts.append(dict(name=name, lat=lat, lon=lon, color=color, radius=radius))
+        sel = (name == bs_choice)
+        pts.append(dict(
+            name=name,
+            lat=lat,
+            lon=lon,
+            color=[0, 200, 140] if sel else [160, 160, 160],
+            radius=300 if sel else 140,
+        ))
     df_map = pd.DataFrame(pts)
+
+    # Center the camera on the selected site
+    sel_lat, sel_lon = STATIONS[bs_choice]
+
     st.pydeck_chart(pdk.Deck(
-        map_provider="carto", map_style="light",
+        map_provider="carto",
+        map_style="light",  # "light", "dark-matter", or "voyager"
         initial_view_state=pdk.ViewState(
-            latitude=float(df_map.lat.mean()),
-            longitude=float(df_map.lon.mean()),
-            zoom=11 if bs_choice.startswith("RIY") else 12
+            latitude=float(sel_lat),
+            longitude=float(sel_lon),
+            zoom=13 if bs_choice.startswith("RIY") else 12,
+            pitch=0,
+            bearing=0,
         ),
-        layers=[pdk.Layer("ScatterplotLayer", data=df_map,
-                          get_position='[lon, lat]', get_radius="radius",
-                          get_fill_color="color", pickable=True)],
+        layers=[
+            pdk.Layer(
+                "ScatterplotLayer",
+                data=df_map,
+                get_position='[lon, lat]',
+                get_radius="radius",
+                get_fill_color="color",
+                pickable=True,
+            )
+        ],
         tooltip={"text": "{name}"}
     ))
 
